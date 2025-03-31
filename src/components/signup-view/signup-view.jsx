@@ -18,7 +18,7 @@ export const SignupView = () => {
 
         fetch("https://patrick-myflix-d4f0743299d1.herokuapp.com/users", {
             method:"POST",
-            BODY: JSON.stringify(data),
+            body: JSON.stringify(data),
             headers: {
                 "Content-Type": "application/json",
             },
@@ -39,7 +39,7 @@ export const SignupView = () => {
                 <input
                     type="text"
                     value={username}
-                    onchange={(e) => setUsername(e.target.value)}
+                    onChange={(e) => setUsername(e.target.value)}
                     required
                     minLength="3"
                 />

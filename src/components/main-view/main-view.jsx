@@ -19,10 +19,23 @@ export const MainView = () => {
     fetch("https://patrick-myflix-d4f0743299d1.herokuapp.com/movies", {
       headers: { Authorization: `Bearer ${token}` }
     })
-    .then((response) => response.json())
-    .then((movies) => {
-      setMovies(movies);
-    });
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch movies. Please check your token.");
+        }
+        return response.json();
+      })
+      .then((movies) => {
+        console.log("Fetched movies:", movies);
+        setMovies(movies);
+      })
+      .catch((error) => {
+        console.error(error);
+        alert("Failed to load movies. Please log in again.");
+        setUser(null);
+        setToken(null);
+        localStorage.clear();
+      });
   }, [token]);
 
   if (selectedMovie) {
@@ -38,6 +51,8 @@ export const MainView = () => {
           onLoggedIn={(user, token) => {
             setUser(user);
             setToken(token);
+            localStorage.setItem("user", JSON.stringify(user));
+            localStorage.setItem("token", token);
           }}
         />
         or
