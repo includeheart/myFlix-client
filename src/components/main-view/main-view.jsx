@@ -7,6 +7,7 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { NavigationBar } from '../navigation-bar/navigation-bar';
+import { ProfileView } from '../profile-view/profile-view';
 
 export const MainView = () => {
   const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -140,6 +141,21 @@ export const MainView = () => {
                     localStorage.setItem("token", token);
                   }}
                   />
+                </Col>
+              )}
+            </>
+          } />
+          <Route path="/users/:Username" element={
+            <>
+              {!user ? (
+                <Navigate to="/login" replace />
+              ) : (
+                <Col md={5}>
+                  <ProfileView user={user} token={token} onLoggedOut={() => {
+                    setUser(null);
+                    setToken(null);
+                    localStorage.clear();
+                  }} />
                 </Col>
               )}
             </>
