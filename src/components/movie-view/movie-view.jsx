@@ -18,7 +18,13 @@ export const MovieView = ({ movie, onBackClick }) => {
                 <span>Director: </span>
                 <span>{movie.Director?.Name}</span>
             </div>
-            <button onClick={onBackClick}>Back</button>
+            <button 
+                onClick={onBackClick}
+                className="back-button"
+                style={{ cursor: "pointer" }}
+            >
+                Back
+            </button>
         </div>
     );
 };
