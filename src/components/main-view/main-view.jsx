@@ -5,6 +5,9 @@ import { LoginView } from '../login-view/login-view';
 import { SignupView } from '../signup-view/signup-view';
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { NavigationBar } from '../navigation-bar/navigation-bar';
+import { ProfileView } from '../profile-view/profile-view';
 
 export const MainView = () => {
   const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -12,7 +15,6 @@ export const MainView = () => {
   const [user, setUser] = useState(storedUser? storedUser : null);
   const [token, setToken] = useState(storedToken? storedToken : null);
   const [movies, setMovies] = useState([]);
-  const [selectedMovie, setSelectedMovie] = useState(null);
 
   useEffect(() => {
     if (!token) {
@@ -38,44 +40,160 @@ export const MainView = () => {
         setToken(null);
         localStorage.clear();
       });
-  }, [token]);
+    }, [token]);
+
+    const handleAddToFavorites = (movieId, onFavoriteAdded) => {
+      fetch(`https://patrick-myflix-d4f0743299d1.herokuapp.com/users/${user.Username}/movies/${movieId}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Failed to add movie to favorites.");
+          }
+          alert("Movie added to favorites!");
+          if (onFavoriteAdded) {
+            onFavoriteAdded();
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+          alert("Failed to add movie to favorites.");
+        });
+    };
 
   return (
-    <Row className="justify-content-md-center">
-      {!user ? (
-        <Col md={5}>
-          <LoginView
-            onLoggedIn={(user, token) => {
-              setUser(user);
-              setToken(token);
-              localStorage.setItem("user", JSON.stringify(user));
-              localStorage.setItem("token", token);
-            }}
+    <BrowserRouter>
+      <NavigationBar
+        user={user}
+        onLoggedOut={() => {
+          setUser(null);
+          setToken(null);
+          localStorage.clear();
+        }}
+      />
+      <Row className="justify-content-md-center">
+        <Routes>
+          <Route 
+            path="/" 
+            element={
+              <>
+                <Col md={8}>
+                  <h1>MyFlix</h1>
+                  <p>Welcome to MyFlix! Your favorite movie database.</p>
+                </Col>
+              </>
+            }
           />
-          or
-          <SignupView
-            onSignedUp={(user, token) => {
-              setUser(user);
-              setToken(token);
-              localStorage.setItem("user", JSON.stringify(user));
-              localStorage.setItem("token", token);
-            }}
+          <Route
+            path="/movies"
+            element={
+              <>
+                {!user ? (
+                  <Navigate to="/login" replace />
+                ) : (
+                  <Col md={8}>
+                    <h2>Movies</h2>
+                    {movies.length === 0 ? (
+                      <p>No movies found.</p>
+                    ) : (
+                      movies.map((movie) => (
+                        <Col className="mb-4" key={movie._id}>
+                          <MovieCard 
+                            key={movie._id} 
+                            movie={movie}
+                            onFavorite={handleAddToFavorites}
+                          />
+                        </Col>
+                      ))
+                    )}
+                  </Col>
+                )}
+              </>
+            }
           />
-        </Col>
-      ) : selectedMovie ? (
-        <MovieView movie={selectedMovie} onBackClick={() => setSelectedMovie(null)} />
-      ) : (
-        movies.map((movie) => (
-          <Col className="mb-4" md={3} key={movie._id}>
-            <MovieCard
-              movie={movie}
-              onMovieClick={(movie) => {
-                setSelectedMovie(movie);
-              }}
-            />
-          </Col>
-        ))
-      )}
-    </Row>
+          <Route 
+            path="/movies/:movieId" 
+            element={
+              <>
+                {!user ? (
+                  <Navigate to="/login" replace />
+                ) : movies.length === 0 ? (
+                  <Col md={8}>
+                    <p>This list is empty!</p>
+                  </Col>
+                ) : (
+                  <Col md={8}>
+                    <MovieView movies={movies} />
+                  </Col>
+                )}
+              </>
+            }
+          />
+          <Route 
+            path="/login" 
+            element={
+            <>
+              {user ? (
+                <Navigate to="/movies" replace />
+              ) : (
+                <Col md={5}>
+                  <LoginView
+                    onLoggedIn={(user, token) => {
+                      setUser(user);
+                      setToken(token);
+                      localStorage.setItem("user", JSON.stringify(user));
+                      localStorage.setItem("token", token);
+                    }}
+                  />
+                </Col>
+              )}
+            </>
+          } 
+          />
+          <Route path="/signup" element={
+            <>
+              {user ? (
+                <Navigate to="/movies" replace />
+              ) : (
+                <Col md={5}>
+                  <SignupView
+                    onSignedUp={(user, token) => {
+                    setUser(user);
+                    setToken(token);
+                    localStorage.setItem("user", JSON.stringify(user));
+                    localStorage.setItem("token", token);
+                  }}
+                  />
+                </Col>
+              )}
+            </>
+          } />
+          <Route path="/users/:Username" element={
+            <>
+              {!user ? (
+                <Navigate to="/login" replace />
+              ) : (
+                <Col md={8}>
+                  <ProfileView
+                    user={user}
+                    token={token}
+                    movies={movies}
+                    onLoggedOut={() => {
+                      setUser(null);
+                      setToken(null);
+                      localStorage.clear();
+                    }}
+                  />
+                </Col>
+              )}
+            </>
+          } />
+        </Routes>
+      </Row>
+    </BrowserRouter>
   );
 };
