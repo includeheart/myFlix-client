@@ -42,6 +42,29 @@ export const MainView = () => {
       });
     }, [token]);
 
+    const handleAddToFavorites = (movieId, onFavoriteAdded) => {
+      fetch(`https://patrick-myflix-d4f0743299d1.herokuapp.com/users/${user.Username}/movies/${movieId}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Failed to add movie to favorites.");
+          }
+          alert("Movie added to favorites!");
+          if (onFavoriteAdded) {
+            onFavoriteAdded();
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+          alert("Failed to add movie to favorites.");
+        });
+    };
+
   return (
     <BrowserRouter>
       <NavigationBar
@@ -79,7 +102,11 @@ export const MainView = () => {
                     ) : (
                       movies.map((movie) => (
                         <Col className="mb-4" key={movie._id}>
-                          <MovieCard key={movie._id} movie={movie} />
+                          <MovieCard 
+                            key={movie._id} 
+                            movie={movie}
+                            onFavorite={handleAddToFavorites}
+                          />
                         </Col>
                       ))
                     )}
@@ -150,12 +177,17 @@ export const MainView = () => {
               {!user ? (
                 <Navigate to="/login" replace />
               ) : (
-                <Col md={5}>
-                  <ProfileView user={user} token={token} onLoggedOut={() => {
-                    setUser(null);
-                    setToken(null);
-                    localStorage.clear();
-                  }} />
+                <Col md={8}>
+                  <ProfileView
+                    user={user}
+                    token={token}
+                    movies={movies}
+                    onLoggedOut={() => {
+                      setUser(null);
+                      setToken(null);
+                      localStorage.clear();
+                    }}
+                  />
                 </Col>
               )}
             </>

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Button, Row, Col, Form } from "react-bootstrap";
+import { MovieCard } from "../movie-card/movie-card";
 
-export const ProfileView = ({ user, token, onLoggedOut }) => {
+export const ProfileView = ({ user, token, onLoggedOut, movies }) => {
   const [userData, setUserData] = useState(null);
   const [newUsername, setNewUsername] = useState("");
   const [newEmail, setNewEmail] = useState("");
@@ -29,6 +30,34 @@ export const ProfileView = ({ user, token, onLoggedOut }) => {
         alert("Failed to load user data.");
       });
   }, [user, token]);
+
+  useEffect(() => {
+    console.log("Movies prop in ProfileView:", movies);
+  }, [movies]);
+
+  useEffect(() => {
+    refreshUserData();
+  }, [movies]);
+
+  const refreshUserData = () => {
+    fetch(`https://patrick-myflix-d4f0743299d1.herokuapp.com/users/${user.Username}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch user data.");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Refreshed user data:", data);
+        setUserData(data);
+      })
+      .catch((error) => {
+        console.error(error);
+        alert("Failed to refresh user data.");
+      });
+  };
 
   const handleUpdate = () => {
     const updatedData = {
@@ -122,9 +151,34 @@ export const ProfileView = ({ user, token, onLoggedOut }) => {
       });
   };
 
+  const handleRemoveFromFavorites = (movieId) => {
+    fetch(`https://patrick-myflix-d4f0743299d1.herokuapp.com/users/${user.Username}/movies/${movieId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to remove movie from favorites.");
+        }
+        alert("Movie removed from favorites!");
+        refreshUserData();
+      })
+      .catch((error) => {
+        console.error(error);
+        alert("Failed to remove movie from favorites.");
+      });
+  };
+
   if (!userData) {
     return <div>Loading...</div>;
   }
+
+  const favoriteMovies = movies && userData?.FavoriteMovies
+    ? movies.filter((movie) => userData.FavoriteMovies.includes(movie._id))
+    : [];
 
   return (
     <Row className="justify-content-md-center">
@@ -189,6 +243,24 @@ export const ProfileView = ({ user, token, onLoggedOut }) => {
         >
           Delete Account
         </Button>
+      </Col>
+      <Col md={12} className="mt-5">
+        <h3>Favorite Movies</h3>
+        {favoriteMovies.length === 0 ? (
+          <p>You have no favorite movies yet.</p>
+        ) : (
+          <Row>
+            {favoriteMovies.map((movie) => (
+              <Col md={4} key={movie._id} className="mb-4">
+                <MovieCard
+                  movie={movie}
+                  onFavorite={(movieId) => handleAddToFavorites(movieId, refreshUserData)}
+                  onRemoveFavorite={(movieId) => handleRemoveFromFavorites(movieId)}
+                />
+              </Col>
+            ))}
+          </Row>
+        )}
       </Col>
     </Row>
   );
