@@ -12,9 +12,10 @@ import { ProfileView } from '../profile-view/profile-view';
 export const MainView = () => {
   const storedUser = JSON.parse(localStorage.getItem("user"));
   const storedToken = localStorage.getItem("token");
-  const [user, setUser] = useState(storedUser? storedUser : null);
-  const [token, setToken] = useState(storedToken? storedToken : null);
+  const [user, setUser] = useState(storedUser ? storedUser : null);
+  const [token, setToken] = useState(storedToken ? storedToken : null);
   const [movies, setMovies] = useState([]);
+  const [filteredMovies, setFilteredMovies] = useState([]);
 
   useEffect(() => {
     if (!token) {
@@ -32,6 +33,7 @@ export const MainView = () => {
       .then((movies) => {
         console.log("Fetched movies:", movies);
         setMovies(movies);
+        setFilteredMovies(movies);
       })
       .catch((error) => {
         console.error(error);
@@ -40,30 +42,37 @@ export const MainView = () => {
         setToken(null);
         localStorage.clear();
       });
-    }, [token]);
+  }, [token]);
 
-    const handleAddToFavorites = (movieId, onFavoriteAdded) => {
-      fetch(`https://patrick-myflix-d4f0743299d1.herokuapp.com/users/${user.Username}/movies/${movieId}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+  const handleAddToFavorites = (movieId, onFavoriteAdded) => {
+    fetch(`https://patrick-myflix-d4f0743299d1.herokuapp.com/users/${user.Username}/movies/${movieId}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to add movie to favorites.");
+        }
+        alert("Movie added to favorites!");
+        if (onFavoriteAdded) {
+          onFavoriteAdded();
+        }
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error("Failed to add movie to favorites.");
-          }
-          alert("Movie added to favorites!");
-          if (onFavoriteAdded) {
-            onFavoriteAdded();
-          }
-        })
-        .catch((error) => {
-          console.error(error);
-          alert("Failed to add movie to favorites.");
-        });
-    };
+      .catch((error) => {
+        console.error(error);
+        alert("Failed to add movie to favorites.");
+      });
+  };
+
+  const handleSearch = (query) => {
+    const filtered = movies.filter((movie) =>
+      movie.Title.toLowerCase().includes(query.toLowerCase())
+    );
+    setFilteredMovies(filtered);
+  };
 
   return (
     <BrowserRouter>
@@ -74,6 +83,7 @@ export const MainView = () => {
           setToken(null);
           localStorage.clear();
         }}
+        onSearch={handleSearch}
       />
       <Row className="justify-content-md-center">
         <Routes>
@@ -97,10 +107,10 @@ export const MainView = () => {
                 ) : (
                   <Col md={8}>
                     <h2>Movies</h2>
-                    {movies.length === 0 ? (
+                    {filteredMovies.length === 0 ? (
                       <p>No movies found.</p>
                     ) : (
-                      movies.map((movie) => (
+                      filteredMovies.map((movie) => (
                         <Col className="mb-4" key={movie._id}>
                           <MovieCard 
                             key={movie._id} 
